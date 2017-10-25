@@ -170,9 +170,15 @@ resource "aws_iam_role_policy_attachment" "codebuild_s3" {
 
 # 1. GitHub -> ECR (Docker image)
 
+locals {
+  source_build_deploy_count       = "${var.enabled && signum(length(var.app)) == 1 && signum(length(var.env)) == 1 ? 1 : 0}"
+  source_build_count = "${var.enabled && (signum(length(var.app)) == 0 || signum(length(var.env)) == 0) ? 1 : 0}"
+}
+
+
 resource "aws_codepipeline" "source_build_deploy" {
   # Elastic Beanstalk application name and environment name are specified
-  count    = "${var.enabled && signum(length(var.app)) == 1 && signum(length(var.env)) == 1 ? 1 : 0}"
+  count    = "${local.source_build_deploy_count}"
   name     = "${module.label.id}"
   role_arn = "${aws_iam_role.default.arn}"
 
@@ -242,7 +248,7 @@ resource "aws_codepipeline" "source_build_deploy" {
 
 resource "aws_codepipeline" "source_build" {
   # Elastic Beanstalk application name or environment name are not specified
-  count    = "${var.enabled && (signum(length(var.app)) == 0 || signum(length(var.env)) == 0) ? 1 : 0}"
+  count    = "${local.source_build_count}"
   name     = "${module.label.id}"
   role_arn = "${aws_iam_role.default.arn}"
 
